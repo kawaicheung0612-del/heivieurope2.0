@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Heivi Europe Trip 2.0 Scrapbook</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel (JSX 編譯器) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- 🚀 替換為 Firebase Compat (相容版) SDK，解決 Parse Error 問題 -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <style>
+    .scrollbar-none::-webkit-scrollbar { display: none; }
+    .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+    body { -webkit-tap-highlight-color: transparent; }
+  </style>
+</head>
+<body class="bg-[#F7F4EB]">
+  <div id="root"></div>
+
+  <!-- React 應用程式碼 (移除 data-type="module" 與 import 語法) -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // 🌟 你的專屬 Firebase 設定
+    const firebaseConfig = {
+      apiKey: "AIzaSyCVVzHvxVSJwPm9N70DxcWD-unFTnNPc_4",
+      authDomain: "heivi-europe-trip.firebaseapp.com",
+      projectId: "heivi-europe-trip",
+      storageBucket: "heivi-europe-trip.firebasestorage.app",
+      messagingSenderId: "658738276661",
+      appId: "1:658738276661:web:0f9d92abc924345710047c",
+      measurementId: "G-DXWVVFSYYG"
+    };
+
+    // 初始化 Firebase (使用 Compat 語法)
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // 樣式設定
+    const styles = {
+      scrapbookBg: {
+        backgroundColor: '#F7F4EB',
+        backgroundImage: `radial-gradient(#D6D1C2 1px, transparent 1.5px), radial-gradient(#D6D1C2 1px, #F7F4EB 1.5px)`,
+        backgroundSize: '24px 24px',
+        backgroundPosition: '0 0, 12px 12px',
+      },
+      tape: "absolute -top-3.5 left-1/2 -translate-x-1/2 w-24 h-6 bg-[#E9DCA3]/85 backdrop-blur-[1px] -rotate-2 shadow-xs border border-dashed border-[#DDD096]/60 pointer-events-none z-10",
+      tapeGreen: "absolute -top-3 left-4 w-16 h-5 bg-[#B8C6B3]/60 backdrop-blur-[1px] rotate-2 shadow-xs pointer-events-none z-10",
+      tapePink: "absolute -top-3 right-4 w-14 h-5 bg-[#E4B1B1]/60 backdrop-blur-[1px] -rotate-2 shadow-xs pointer-events-none z-10",
+      tapeCornerLeft: "absolute top-1.5 left-1.5 w-14 h-5 bg-[#C88A58]/45 backdrop-blur-[1px] -rotate-12 shadow-sm border border-dashed border-[#C88A58]/20 pointer-events-none z-10",
+      tapeCornerRight: "absolute top-1.5 right-1.5 w-14 h-5 bg-[#B8C6B3]/55 backdrop-blur-[1px] rotate-12 shadow-sm border border-dashed border-[#B8C6B3]/35 pointer-events-none z-10",
+      activeBtn: "active:scale-95 transition-transform duration-100"
+    };
+
+    const Icons = {
+      Calendar: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+      Ticket: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>,
+      Coins: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+      CheckList: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+      Users: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
+      Walk: () => <svg className="w-4 h-4 text-[#8F9E8B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5H9m4 8H9m2 8h-2m4-12a1 1 0 11-2 0 1 1 0 012 0zM7 21h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+      Drive: () => <svg className="w-4 h-4 text-[#C88A58]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10M21 16V9a2 2 0 00-2-2h-3v9" /></svg>,
+      Transit: () => <svg className="w-4 h-4 text-[#B46A40]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-1v8m0 0l3-3m-3 3L9 8" /></svg>,
+      Trash: () => <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-16v1a3 3 0 006 0v-1M4 7h16" /></svg>,
+      Edit: () => <svg className="w-4 h-4 text-[#8F9E8B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>,
+      Plus: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>,
+      Map: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>,
+      Sparkles: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>,
+      Globe: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h1.5A2.5 2.5 0 0019 9.5V8a2 2 0 00-2-2h-3.172a2 2 0 00-1.414-.586l-.828-.828A2 2 0 0010.172 4H8.5a2 2 0 00-1.789 1.106l-.447.894M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+      Speaker: () => <svg className="w-4 h-4 text-[#8F9E8B]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>,
+      Bell: () => <svg className="w-5 h-5 text-amber-600 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>,
+      ExternalLink: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+    };
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('schedules');
+      const [bookingFilter, setBookingFilter] = useState('flight'); 
+      const [user, setUser] = useState(null);
+      const [isSyncing, setIsSyncing] = useState(false);
+      
+      const [pinVerified, setPinVerified] = useState(false);
+      const [showPinModal, setShowPinModal] = useState(false);
+      const [tempPin, setTempPin] = useState('');
+      const [pinError, setPinError] = useState('');
+
+      // AI & Voice parameters
+      const [speakingId, setSpeakingId] = useState(null);
+      const [systemAlertMessage, setSystemAlertMessage] = useState(null);
+
+      // Active travel notifications state
+      const [showNotificationPopup, setShowNotificationPopup] = useState(false);
+      const [activeNotification, setActiveNotification] = useState(null);
+      const [previewFile, setPreviewFile] = useState({ url: null, title: '' });
+
+      // Core configurations for June 2026 Europe Tour
+      const tripConfig = {
+        title: "Heivi Europe Trip 2.0",
+        startDate: "2026-06-05", 
+        endDate: "2026-06-20",   
+        dates: [
+          "2026-06-05", "2026-06-06", "2026-06-07", "2026-06-08", "2026-06-09",
+          "2026-06-10", "2026-06-11", "2026-06-12",
+          "2026-06-13",
+          "2026-06-14",
+          "2026-06-15",
+          "2026-06-16", "2026-06-17",
+          "2026-06-18", "2026-06-19",
+          "2026-06-20"
+        ]
+      };
+
+      const [selectedDate, setSelectedDate] = useState(tripConfig.dates[0]);
+
+      // State storage
+      const [schedules, setSchedules] = useState([]);
+      const [bookings, setBookings] = useState([]);
+      const [expenses, setExpenses] = useState([]);
+      const [plannings, setPlannings] = useState([]);
+      const [members, setMembers] = useState([]);
+
+      // Modals controller
+      const [showScheduleModal, setShowScheduleModal] = useState(false);
+      const [editingSchedule, setEditingSchedule] = useState(null);
+      const [showBookingModal, setShowBookingModal] = useState(false);
+      const [editingBooking, setEditingBooking] = useState(null);
+      const [showExpenseModal, setShowExpenseModal] = useState(false);
+      const [editingExpense, setEditingExpense] = useState(null);
+      const [showPlanningModal, setShowPlanningModal] = useState(false);
+      const [editingPlanning, setEditingPlanning] = useState(null);
+      const [showMemberModal, setShowMemberModal] = useState(false);
+      const [editingMember, setEditingMember] = useState(null);
+      const [deleteConfirm, setDeleteConfirm] = useState({ show: false, type: '', id: '' });
+      const [activeLanguageTab, setActiveLanguageTab] = useState('FR');
+
+      // 模擬資料設定
+      const transportNewsDb = {
+        "2026-06-10": {
+          title: "🚨 法國 SNCF 全國大罷工預警",
+          message: "法國主要工會已發出 2026 年 6 月 10 日全國鐵路大罷工通知！預計法國高鐵（TGV）、地區火車（TER）及巴黎地鐵 RER 交通將受到重大延誤或大量取消。請注意您今日前往倫敦的跨國交通接駁，隨時查看 Eurostar 最新班次變更！",
+          level: "critical",
+          station: "巴黎北站 (Paris Gare du Nord)"
+        },
+        "2026-06-13": {
+          title: "⚠️ Eurostar 歐洲之星隧道運作受限",
+          message: "因英法海底隧道進行例行安全維護，今日部分由倫敦往返巴黎、布魯塞爾的歐洲之星列車可能出現 15-25 分鐘的運行延誤。請預留充足月台安檢及海關過關時間。",
+          level: "warning",
+          station: "聖潘克拉斯國際車站 (London St Pancras)"
+        },
+        "2026-06-16": {
+          title: "⚠️ 阿姆斯特丹中央車站月台維修工程",
+          message: "阿姆斯特丹中央車站（Amsterdam Centraal）部分軌道今日實施工程限制，往返風車村的區域列車發車月台將有臨時變更，請注意車站大螢幕廣播以免搭錯列車。",
+          level: "info",
+          station: "阿姆斯特丹中央車站"
+        }
+      };
+
+      const mockWeather = {
+        "2026-06-05": { temp: "22°C", tempRange: "16°C - 23°C", type: "巴黎晴空", icon: "☀️" },
+        "2026-06-06": { temp: "21°C", tempRange: "15°C - 22°C", type: "塞納河微風", icon: "⛅" },
+        "2026-06-07": { temp: "18°C", tempRange: "13°C - 19°C", type: "巴黎小雨", icon: "🌧️" },
+        "2026-06-08": { temp: "20°C", tempRange: "14°C - 21°C", type: "凱旋門和煦", icon: "⛅" },
+        "2026-06-09": { temp: "23°C", tempRange: "16°C - 24°C", type: "巴黎陽光", icon: "☀️" },
+        "2026-06-10": { temp: "19°C", tempRange: "12°C - 20°C", type: "倫敦大笨鐘微陰", icon: "☁️" },
+        "2026-06-11": { temp: "20°C", tempRange: "13°C - 21°C", type: "英倫晨霧", icon: "🍃" },
+        "2026-06-12": { temp: "22°C", tempRange: "14°C - 23°C", type: "倫敦多雲", icon: "⛅" },
+        "2026-06-13": { temp: "24°C", tempRange: "17°C - 25°C", type: "布魯塞爾晴朗", icon: "☀️" },
+        "2026-06-14": { temp: "21°C", tempRange: "15°C - 22°C", type: "布魯日中度陰天", icon: "☁️" },
+        "2026-06-15": { temp: "20°C", tempRange: "14°C - 21°C", type: "安特衛普和煦", icon: "⛅" },
+        "2026-06-16": { temp: "21°C", tempRange: "15°C - 22°C", type: "阿姆斯特丹陣雨", icon: "🌧️" },
+        "2026-06-17": { temp: "22°C", tempRange: "16°C - 23°C", type: "運河風光陽光", icon: "☀️" },
+        "2026-06-18": { temp: "23°C", tempRange: "15°C - 24°C", type: "法蘭克福晴", icon: "☀️" },
+        "2026-06-19": { temp: "21°C", tempRange: "13°C - 22°C", type: "法蘭克福微涼", icon: "⛅" },
+        "2026-06-20": { temp: "25°C", tempRange: "18°C - 26°C", type: "幸福歸途回家", icon: "🏡" }
+      };
+
+      const defaultMembers = [
+        { id: 'm1', name: "Andrew 安德魯", avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Andrew" },
+        { id: 'm2', name: "Vivian 薇薇安", avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Vivian" },
+        { id: 'm3', name: "艾瑪 Emma", avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=Emma" }
+      ];
+
+      const defaultSchedules = [
+        { id: 's1', date: "2026-06-05", time: "10:00", name: "艾菲爾鐵塔 登頂行程", type: "attraction", duration: "120", price: "28", hours: "09:00 - 22:45", address: "Champ de Mars, 5 Avenue France, Paris", notes: "一定要提早15分鐘去排隊換電子票！", transportTime: "30", transportDistance: "4.2", transportMode: "transit", order: 0 },
+        { id: 's2', date: "2026-06-05", time: "13:00", name: "Les Deux Magots 雙叟咖啡館", type: "food", duration: "90", price: "0", hours: "07:30 - 01:00", address: "6 Place Saint-Germain des Prés, Paris", notes: "經典熱巧克力跟拿破崙蛋糕必點", transportTime: "15", transportDistance: "1.2", transportMode: "walk", order: 1 },
+        { id: 's3', date: "2026-06-05", time: "15:30", name: "巴黎精品旅館 Le Pavillon Check-in", type: "hotel", duration: "60", price: "0", hours: "15:00 以後入住", address: "28 Place des Vosges, 75003 Paris", notes: "放好大件行李，稍事休息喝杯迎賓茶。", transportTime: "10", transportDistance: "0.8", transportMode: "walk", order: 2 }
+      ];
+
+      const defaultBookings = [
+        { id: 'b1', type: "flight", title: "法國航空 AF188 直飛航班", flightNo: "AF188", fromCode: "HKG", fromCity: "香港", toCode: "CDG", toCity: "巴黎", date: "2026-06-04", time: "23:05", seat: "22A, 22B", gate: "Gate 15", pinProtected: true, notes: "提早 3 小時到香港機場辦理登機。" },
+        { id: 'b3', type: "transit", title: "歐洲之星 Eurostar 高鐵票 (巴黎->倫敦)", date: "2026-06-10", time: "10:13", hours: "10:13 - 12:30", address: "Paris Gare du Nord", price: "89", fileUrl: "", pinProtected: true, notes: "跨國火車需提早至少60-90分鐘抵達巴黎北站進行安檢。" }
+      ];
+
+      const defaultExpenses = [
+        { id: 'e1', date: "2026-06-05", amount: 56, currency: "EUR", category: "美食", desc: "雙叟咖啡館午茶", payer: "Andrew", splitType: "shared" },
+        { id: 'e2', date: "2026-06-05", amount: 120, currency: "EUR", category: "購物", desc: "Vivian 巴黎精品手信", payer: "Vivian", splitType: "personal" }
+      ];
+
+      const defaultPlannings = [
+        { id: 'p1', type: "todo", text: "線上購買羅浮宮與倫敦眼門票", done: true, assign: "Vivian 薇薇安" },
+        { id: 'p2', type: "packing", text: "準備歐規轉接頭與多國 SIM 卡", done: false, assign: "全體" }
+      ];
+
+      const countryGuides = {
+        FR: { name: "法國 巴黎 🇫🇷", clothing: "👚【衣】：巴黎人穿搭偏向簡約優雅...", food: "🍷【食】：進餐廳時，服務生會送上免費法國麵包...", accommodation: "🏨【住】：古建築飯店電梯極小，請自備牙刷...", transit: "🚇【行】：搭乘地鐵時請留意包包財物..." },
+        UK: { name: "英國 倫敦 🇬🇧", clothing: "👚【衣】：倫敦天氣多變，建議洋蔥式穿法...", food: "🍷【食】：在傳統 Pub 點餐必須自行到櫃檯排隊...", accommodation: "🏨【住】：英國插頭為三腳扁平插座（G型）...", transit: "🚇【行】：倫敦地鐵可直接刷信用卡乘車..." },
+        BE: { name: "比利時 🇧🇪", clothing: "👚【衣】：布魯塞爾多為石鋪路，考驗鞋底...", food: "🍷【食】：吃淡菜時當地人愛用空殼當夾子...", accommodation: "🏨【住】：民宿無電梯需有心理準備，垃圾嚴格分類...", transit: "🚇【行】：市區可刷信用卡搭乘地鐵輕軌..." },
+        NL: { name: "荷蘭 阿姆斯特丹 🇳🇱", clothing: "👚【衣】：單車文化盛行，街頭風格休閒...", food: "🍷【食】：荷蘭人習慣分帳 (Go Dutch)...", accommodation: "🏨【住】：運河老房樓梯陡峭，多數飯店無冷氣...", transit: "🚇【行】：絕對不要走在單車專用道上..." },
+        DE: { name: "德國 法蘭克福 🇩🇪", clothing: "👚【衣】：講求實用防風外套為主...", food: "🍷【食】：用餐點飲料是基本禮貌...", accommodation: "🏨【住】：星期日為法定安靜日...", transit: "🚇【行】：地鐵無閘門，逃票罰款極高..." }
+      };
+
+      const getCountryByDate = (dateStr) => {
+        const dObj = new Date(dateStr);
+        const day = dObj.getDate();
+        const month = dObj.getMonth() + 1;
+        if (month === 6) {
+          if (day >= 5 && day <= 9) return { name: "法國 巴黎 🇫🇷", code: "FR", color: "bg-blue-50 text-blue-700 border-blue-200" };
+          if (day >= 10 && day <= 12) return { name: "英國 倫敦 🇬🇧", code: "UK", color: "bg-red-50 text-red-700 border-red-200" };
+          if (day === 13) return { name: "比利時 布魯塞爾 🇧🇪", code: "BE", color: "bg-amber-50 text-amber-800 border-amber-200" };
+          if (day === 14) return { name: "比利時 布魯日 & 根特 🇧🇪", code: "BE", color: "bg-amber-50 text-amber-800 border-amber-200" };
+          if (day === 15) return { name: "比利時 安特衛普 / 荷蘭 🇳🇱", code: "BE_NL", color: "bg-orange-50 text-orange-800 border-orange-200" };
+          if (day >= 16 && day <= 17) return { name: "荷蘭 阿姆斯特丹 🇳🇱", code: "NL", color: "bg-orange-50 text-orange-700 border-orange-200" };
+          if (day >= 18 && day <= 19) return { name: "德國 法蘭克福 🇩🇪", code: "DE", color: "bg-slate-100 text-slate-800 border-slate-300" };
+          if (day === 20) return { name: "回家 🏡", code: "HK", color: "bg-emerald-50 text-emerald-800 border-emerald-200" };
+        }
+        return { name: "歐洲探險中 🗺️", code: "EU", color: "bg-emerald-50 text-emerald-800 border-emerald-200" };
+      };
+
+      const getDayOfWeek = (dateStr) => {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        return days[date.getDay()];
+      };
+
+      // 🔐 Firebase 初始化與自動監聽 (改為 Compat 語法) 🔐
+      useEffect(() => {
+        auth.signInAnonymously().catch(err => {
+          console.error("Firebase Login Error:", err);
+          setSystemAlertMessage("資料庫連線失敗，請檢查 Firebase 權限設定！");
+        });
+
+        const unsubscribe = auth.onAuthStateChanged((usr) => {
+          if (usr) setUser(usr);
+        });
+        return () => unsubscribe();
+      }, []);
+
+      // 載入與同步資料 (Auto Fetch)
+      useEffect(() => {
+        if (!user) return;
+        setIsSyncing(true);
+
+        const tripId = 'europe2026';
+        
+        const setupListener = (collectionName, setter) => {
+          const ref = db.collection('trips').doc(tripId).collection(collectionName);
+          return ref.onSnapshot((snap) => {
+            const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            if (collectionName === 'schedules') {
+              setter(list.sort((a,b) => (a.order || 0) - (b.order || 0)));
+            } else {
+              setter(list);
+            }
+            setIsSyncing(false);
+          }, err => console.error(`Sync error in ${collectionName}:`, err));
+        };
+
+        const unsubSched = setupListener('schedules', setSchedules);
+        const unsubBook = setupListener('bookings', setBookings);
+        const unsubExp = setupListener('expenses', setExpenses);
+        const unsubPlan = setupListener('plannings', setPlannings);
+        const unsubMemb = setupListener('members', setMembers);
+
+        // 初始化預設值
+        const initData = async () => {
+          const configRef = db.collection('trips').doc(tripId).collection('config').doc('status');
+          const snap = await configRef.get();
+          if (!snap.exists || !snap.data().seeded) {
+            defaultSchedules.forEach(item => db.collection('trips').doc(tripId).collection('schedules').doc(item.id).set(item));
+            defaultBookings.forEach(item => db.collection('trips').doc(tripId).collection('bookings').doc(item.id).set(item));
+            defaultExpenses.forEach(item => db.collection('trips').doc(tripId).collection('expenses').doc(item.id).set(item));
+            defaultPlannings.forEach(item => db.collection('trips').doc(tripId).collection('plannings').doc(item.id).set(item));
+            defaultMembers.forEach(item => db.collection('trips').doc(tripId).collection('members').doc(item.id).set(item));
+            configRef.set({ seeded: true });
+          }
+        };
+        initData();
+
+        return () => { unsubSched(); unsubBook(); unsubExp(); unsubPlan(); unsubMemb(); };
+      }, [user]);
+
+      // 儲存資料到 Firebase (Auto Save)
+      const saveData = async (type, collectionName, dataId, newData) => {
+        if (user) {
+          try {
+            const docRef = db.collection('trips').doc('europe2026').collection(collectionName).doc(dataId);
+            await docRef.set(newData, { merge: true });
+          } catch (e) {
+            console.error("Save cloud error:", e);
+            setSystemAlertMessage("無法自動儲存至雲端，請確認 Firebase Rules 已設為允許。");
+          }
+        }
+      };
+
+      const deleteData = async (collectionName, dataId) => {
+        if (user) {
+          try {
+            const docRef = db.collection('trips').doc('europe2026').collection(collectionName).doc(dataId);
+            await docRef.delete();
+          } catch (e) {
+            console.error("Delete cloud error:", e);
+          }
+        }
+      };
+
+      useEffect(() => {
+        if (transportNewsDb[selectedDate]) {
+          setActiveNotification(transportNewsDb[selectedDate]);
+          setShowNotificationPopup(true);
+        }
+      }, [selectedDate]);
+
+      const handleImageUpload = (e, callback) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 4 * 1024 * 1024) {
+          setSystemAlertMessage("⚠️ 檔案太大啦！為了保證手帳暢順儲存，請上傳小於 4MB 的圖片或 PDF 檔案喔。");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (file.type === 'application/pdf' || !file.type.startsWith('image/')) {
+            callback(event.target.result);
+            return;
+          }
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 400;
+            const scaleSize = MAX_WIDTH / img.width;
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scaleSize;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            callback(canvas.toDataURL('image/jpeg', 0.75));
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      };
+
+      const getCountdown = () => {
+        const today = new Date();
+        const start = new Date(tripConfig.startDate);
+        const diffTime = start - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays > 0 ? `出發倒數 ${diffDays} 天！✨` : "旅程進行中 / 已完美落幕 🍂";
+      };
+
+      const moveSchedule = (index, direction) => {
+        const filtered = schedules.filter(s => s.date === selectedDate).sort((a,b) => (a.order || 0) - (b.order || 0));
+        if (direction === 'up' && index === 0) return;
+        if (direction === 'down' && index === filtered.length - 1) return;
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        const currentItem = filtered[index];
+        const targetItem = filtered[targetIndex];
+        const tempOrder = currentItem.order || 0;
+        currentItem.order = targetItem.order || 0;
+        targetItem.order = tempOrder;
+        saveData('schedule', 'schedules', currentItem.id, currentItem);
+        saveData('schedule', 'schedules', targetItem.id, targetItem);
+      };
+
+      const handleVerifyPin = () => {
+        if (tempPin === '0206') {
+          setPinVerified(true);
+          setShowPinModal(false);
+          setPinError('');
+          setTempPin('');
+          if (window.pendingAction) {
+            window.pendingAction();
+            window.pendingAction = null;
+          }
+        } else {
+          setPinError('密碼錯誤！提示：出發紀念日 📅 (0206)');
+        }
+      };
+
+      const executeSensitiveAction = (callback) => {
+        if (pinVerified) { callback(); } else {
+          setShowPinModal(true); setTempPin(''); setPinError('');
+          window.pendingAction = callback;
+        }
+      };
+
+      const getCurrencyTotals = () => {
+        let eurTotal = 0; let gbpTotal = 0; let hkdTotal = 0;
+        let splitLedger = {
+          EUR: { andrewPaidShared: 0, vivianPaidShared: 0, andrewPaidPersonal: 0, vivianPaidPersonal: 0 },
+          GBP: { andrewPaidShared: 0, vivianPaidShared: 0, andrewPaidPersonal: 0, vivianPaidPersonal: 0 },
+          HKD: { andrewPaidShared: 0, vivianPaidShared: 0, andrewPaidPersonal: 0, vivianPaidPersonal: 0 }
+        };
+
+        expenses.forEach(e => {
+          const amt = parseFloat(e.amount) || 0;
+          const currency = e.currency || 'EUR';
+          const payer = e.payer || 'Andrew';
+          const splitType = e.splitType || 'shared';
+
+          if (currency === 'EUR') eurTotal += amt;
+          else if (currency === 'GBP') gbpTotal += amt;
+          else hkdTotal += amt;
+
+          if (splitLedger[currency]) {
+            if (splitType === 'shared') {
+              if (payer === 'Andrew') splitLedger[currency].andrewPaidShared += amt;
+              else splitLedger[currency].vivianPaidShared += amt;
+            } else {
+              if (payer === 'Andrew') splitLedger[currency].andrewPaidPersonal += amt;
+              else splitLedger[currency].vivianPaidPersonal += amt;
+            }
+          }
+        });
+
+        const convToHKD = (val, cur) => cur === 'EUR' ? val * 8.5 : cur === 'GBP' ? val * 10 : val;
+
+        let totalAndrewPaidSharedInHKD = convToHKD(splitLedger.EUR.andrewPaidShared, 'EUR') + convToHKD(splitLedger.GBP.andrewPaidShared, 'GBP') + splitLedger.HKD.andrewPaidShared;
+        let totalVivianPaidSharedInHKD = convToHKD(splitLedger.EUR.vivianPaidShared, 'EUR') + convToHKD(splitLedger.GBP.vivianPaidShared, 'GBP') + splitLedger.HKD.vivianPaidShared;
+        let totalAndrewPersonalInHKD = convToHKD(splitLedger.EUR.andrewPaidPersonal, 'EUR') + convToHKD(splitLedger.GBP.andrewPaidPersonal, 'GBP') + splitLedger.HKD.andrewPaidPersonal;
+        let totalVivianPersonalInHKD = convToHKD(splitLedger.EUR.vivianPaidPersonal, 'EUR') + convToHKD(splitLedger.GBP.vivianPaidPersonal, 'GBP') + splitLedger.HKD.vivianPaidPersonal;
+
+        let netOwedHKD = 0; let whoOwesWhom = "";
+        if (totalAndrewPaidSharedInHKD > totalVivianPaidSharedInHKD) {
+          netOwedHKD = (totalAndrewPaidSharedInHKD - totalVivianPaidSharedInHKD) / 2;
+          whoOwesWhom = "Vivian 應付 Andrew";
+        } else if (totalVivianPaidSharedInHKD > totalAndrewPaidSharedInHKD) {
+          netOwedHKD = (totalVivianPaidSharedInHKD - totalAndrewPaidSharedInHKD) / 2;
+          whoOwesWhom = "Andrew 應付 Vivian";
+        } else {
+          whoOwesWhom = "雙方平帳";
+        }
+
+        const totalSharedHKD = totalAndrewPaidSharedInHKD + totalVivianPaidSharedInHKD;
+        const halfSharedHKD = totalSharedHKD / 2;
+        const andrewGrandTotalHKD = totalAndrewPersonalInHKD + halfSharedHKD;
+        const vivianGrandTotalHKD = totalVivianPersonalInHKD + halfSharedHKD;
+        const totalSpentAllHKD = hkdTotal + (eurTotal * 8.5) + (gbpTotal * 10);
+
+        return {
+          EUR: eurTotal.toFixed(1), GBP: gbpTotal.toFixed(1), HKD: hkdTotal.toFixed(0),
+          TotalHKD: totalSpentAllHKD.toFixed(0), splitLedger,
+          netOwedHKD: netOwedHKD.toFixed(0), whoOwesWhom,
+          andrewGrandTotalHKD: andrewGrandTotalHKD.toFixed(0), vivianGrandTotalHKD: vivianGrandTotalHKD.toFixed(0),
+          totalAndrewPersonalInHKD: totalAndrewPersonalInHKD.toFixed(0), totalVivianPersonalInHKD: totalVivianPersonalInHKD.toFixed(0),
+          halfSharedHKD: halfSharedHKD.toFixed(0)
+        };
+      };
+
+      const openScheduleAddEdit = (item = null) => {
+        if (item) setEditingSchedule({ ...item });
+        else setEditingSchedule({ id: 's_' + Date.now(), date: selectedDate, time: "12:00", name: "", type: "attraction", duration: "60", price: "0", hours: "09:00 - 18:00", address: "", notes: "", ticketFileUrl: "", transportTime: "15", transportDistance: "1.0", transportMode: "walk", order: schedules.filter(s => s.date === selectedDate).length });
+        setShowScheduleModal(true);
+      };
+      const handleSaveSchedule = () => { if (!editingSchedule.name.trim()) return; saveData('schedule', 'schedules', editingSchedule.id, editingSchedule); setShowScheduleModal(false); setEditingSchedule(null); };
+
+      const openBookingAddEdit = (item = null) => {
+        if (item) setEditingBooking({ ...item });
+        else setEditingBooking({ id: 'b_' + Date.now(), type: "ticket", title: "", flightNo: "", fromCode: "", fromCity: "", toCode: "", toCity: "", date: selectedDate, time: "12:00", seat: "", gate: "", checkInDate: selectedDate, checkInTime: "15:00", checkOutDate: selectedDate, checkOutTime: "11:00", address: "", price: "0", fileUrl: "", pinProtected: false, notes: "" });
+        setShowBookingModal(true);
+      };
+      const handleSaveBooking = () => { if (!editingBooking.title && !editingBooking.flightNo) return; saveData('booking', 'bookings', editingBooking.id, editingBooking); setShowBookingModal(false); setEditingBooking(null); };
+
+      const openExpenseAddEdit = (item = null) => {
+        if (item) setEditingExpense({ ...item });
+        else setEditingExpense({ id: 'e_' + Date.now(), date: selectedDate, amount: "", currency: "EUR", category: "美食", desc: "", payer: "Andrew", splitType: "shared" });
+        setShowExpenseModal(true);
+      };
+      const handleSaveExpense = () => { if (!editingExpense.amount || !editingExpense.desc) return; saveData('expense', 'expenses', editingExpense.id, editingExpense); setShowExpenseModal(false); setEditingExpense(null); };
+
+      const openPlanningAddEdit = (item = null) => {
+        if (item) setEditingPlanning({ ...item });
+        else setEditingPlanning({ id: 'p_' + Date.now(), type: "todo", text: "", done: false, assign: "全體" });
+        setShowPlanningModal(true);
+      };
+      const handleSavePlanning = () => { if (!editingPlanning.text) return; saveData('planning', 'plannings', editingPlanning.id, editingPlanning); setShowPlanningModal(false); setEditingPlanning(null); };
+
+      const openMemberAddEdit = (item = null) => {
+        if (item) setEditingMember({ ...item });
+        else setEditingMember({ id: 'm_' + Date.now(), name: "", avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=" + Date.now() });
+        setShowMemberModal(true);
+      };
+      const handleSaveMember = () => { if (!editingMember.name) return; saveData('member', 'members', editingMember.id, editingMember); setShowMemberModal(false); setEditingMember(null); };
+
+      const requestDelete = (type, id) => setDeleteConfirm({ show: true, type, id });
+      const confirmDelete = () => { deleteData(deleteConfirm.type, deleteConfirm.id); setDeleteConfirm({ show: false, type: '', id: '' }); };
+
+      const handleGoogleMapRedirect = (name, address) => { window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} ${address || ""}`)}`, '_blank'); };
+      const getHandwrittenDateFormat = (dateStr) => { const dObj = new Date(dateStr); return `${dObj.getDate()}/${dObj.getMonth() + 1}`; };
+
+      const handlePreviewAttachment = (url, title, isProtected) => {
+        if (isProtected) { executeSensitiveAction(() => { setPreviewFile({ url, title }); }); } else { setPreviewFile({ url, title }); }
+      };
+
+      return (
+        <div style={styles.scrapbookBg} className="min-h-screen text-[#4A4435] font-sans pb-36 relative selection:bg-[#E9DCA3]">
+          
+          {transportNewsDb[selectedDate] && (
+            <div className="bg-red-500 text-white text-xs px-4 py-2 font-bold shadow-md flex items-center justify-between z-40 max-w-md mx-auto animate-pulse">
+              <div className="flex items-center gap-2">
+                <Icons.Bell /> <span>【突發快訊】{transportNewsDb[selectedDate].title}</span>
+              </div>
+              <button onClick={() => { setActiveNotification(transportNewsDb[selectedDate]); setShowNotificationPopup(true); }} className="underline hover:text-red-100 font-mono text-[10px]">
+                詳細廣播 ⚡
+              </button>
+            </div>
+          )}
+
+          <div className="relative w-full overflow-hidden border-b-2 border-[#8F9E8B] shadow-md max-w-md mx-auto bg-[#F7F4EB]">
+            <img src="https://lh3.googleusercontent.com/d/1F-c47JCoRk70OgV8Kj7PeG2WAQufP3oB" alt="Banner" className="w-full h-auto block" />
+            <div className={styles.tapeCornerLeft}></div>
+            <div className={styles.tapeCornerRight}></div>
+            <div className="absolute top-3 right-4 flex items-center gap-1.5 bg-[#FCFAF2]/90 backdrop-blur-sm px-2.5 py-1 rounded-full border border-[#8F9E8B]/40 shadow-sm z-20">
+              <span className={`w-2 h-2 rounded-full ${isSyncing ? 'bg-amber-400 animate-pulse' : 'bg-green-500'}`}></span>
+              <span className="text-[9px] text-[#5B6858] font-bold">{isSyncing ? '雲端同步中...' : '已連線 (自動儲存)'}</span>
+            </div>
+          </div>
+
+          <header className="px-4 pb-2 text-center relative max-w-md mx-auto z-10 -mt-6">
+            <div className="bg-white border-2 border-[#8F9E8B] rounded-xl py-3 px-4 shadow-[4px_4px_0px_#8F9E8B] relative inline-block w-full">
+              <div className={styles.tape}></div>
+              <h1 className="font-serif text-2xl font-bold tracking-wide text-[#3E4A3B] mt-2">{tripConfig.title}</h1>
+              <p className="text-xs text-[#827D6E] mt-1 font-mono tracking-wider">2026.06.05 - 2026.06.20 ✈️</p>
+              <div className="mt-2 bg-[#E9DCA3]/40 border border-dashed border-[#DDD096] rounded-lg py-1 px-3 text-xs inline-block text-[#6F602B]">{getCountdown()}</div>
+            </div>
+          </header>
+
+          <section className="px-4 py-3 max-w-md mx-auto">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-[#8F9E8B] tracking-wider flex items-center gap-1"><Icons.Calendar /> 日期手帳夾</span>
+              <span className="text-[11px] text-[#A69E8D]">左右滑動切換日子 📅</span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-none select-none">
+              {tripConfig.dates.map((dateStr, idx) => {
+                const isSelected = dateStr === selectedDate;
+                const hasAlert = !!transportNewsDb[dateStr];
+                return (
+                  <button key={dateStr} onClick={() => setSelectedDate(dateStr)} className={`flex-shrink-0 flex flex-col items-center justify-between w-16 h-20 rounded-xl border-2 transition-all p-2 relative ${isSelected ? 'bg-[#8F9E8B] text-white border-[#6F7F6C] shadow-inner scale-102' : 'bg-white text-[#4A4435] border-[#E0E5D5] hover:border-[#8F9E8B]/60'}`}>
+                    {hasAlert && <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[8px] text-white border border-white">⚠️</span>}
+                    <div className="text-[9px] font-mono opacity-80 uppercase">Day {idx + 1}</div>
+                    <div className="text-lg font-bold font-serif leading-none">{getHandwrittenDateFormat(dateStr)}</div>
+                    <div className="text-[10px] mt-0.5 font-mono opacity-80 uppercase font-bold">({getDayOfWeek(dateStr)})</div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="px-4 pb-3 max-w-md mx-auto">
+            <div className={`border-2 rounded-xl p-3 shadow-sm ${getCountryByDate(selectedDate).color} flex items-center justify-between`}>
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase tracking-wider opacity-75 font-bold font-mono">目前位置</span>
+                <span className="text-sm font-bold flex items-center gap-1.5 mt-0.5">📍 {getCountryByDate(selectedDate).name}</span>
+              </div>
+              <div className="text-right flex flex-col">
+                <span className="text-[10px] opacity-75 font-bold">天氣預報</span>
+                <span className="text-xs font-bold mt-0.5">{mockWeather[selectedDate]?.icon} {mockWeather[selectedDate]?.type} ({mockWeather[selectedDate]?.tempRange})</span>
+              </div>
+            </div>
+          </section>
+
+          <main className="px-4 max-w-md mx-auto space-y-4">
+            
+            {/* --- Schedules Tab --- */}
+            {activeTab === 'schedules' && (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <h2 className="font-serif text-lg font-bold text-[#3E4A3B] flex items-center gap-1">📌 {getHandwrittenDateFormat(selectedDate)} 手帳遊記</h2>
+                  <button onClick={() => openScheduleAddEdit()} className={`bg-[#8F9E8B] text-white py-1 px-3 rounded-full text-xs font-bold flex items-center gap-1 border-2 border-[#6F7F6C] shadow-sm ${styles.activeBtn}`}><Icons.Plus /> 新增行程</button>
+                </div>
+                {schedules.filter(s => s.date === selectedDate).length === 0 ? (
+                  <div className="bg-white border-2 border-dashed border-[#C4C0B2] rounded-xl p-8 text-center text-[#A29C8B]">
+                    <p className="text-sm">今日尚無手帳記錄喔 🍃</p>
+                  </div>
+                ) : (
+                  <div className="relative pl-3 border-l-2 border-dashed border-[#8F9E8B] ml-2 space-y-5 py-2">
+                    {schedules.filter(s => s.date === selectedDate).map((sched, idx, arr) => (
+                      <div key={sched.id} className="relative group bg-white border-2 border-[#8F9E8B] rounded-xl p-4 shadow-sm">
+                        <div className="absolute -left-6 top-3.5 w-5 h-5 rounded-full bg-[#E9DCA3] border-2 border-white shadow-xs flex items-center justify-center"><span className="w-1.5 h-1.5 rounded-full bg-[#8F9E8B]"></span></div>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="text-[9px] font-mono text-white bg-[#8F9E8B] px-1.5 py-0.5 rounded-md font-bold mr-1.5">{sched.time}</span>
+                            <span className="text-xs text-[#8E8774] font-mono">⏱ {sched.duration} 分鐘</span>
+                            <h3 className="text-md font-bold text-[#3E4A3B] mt-1.5">{sched.name}</h3>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => openScheduleAddEdit(sched)} className="p-1 hover:bg-[#F4F1E9] rounded"><Icons.Edit /></button>
+                            <button onClick={() => requestDelete('schedules', sched.id)} className="p-1 hover:bg-red-50 rounded"><Icons.Trash /></button>
+                          </div>
+                        </div>
+                        {sched.address && (
+                          <div className="mt-2 text-xs text-[#6F695B] bg-[#FCFAF2] border border-[#EBE7DD] rounded-lg p-2 flex items-center justify-between">
+                            <span className="truncate pr-2 font-mono">📍 {sched.address}</span>
+                            <button onClick={() => handleGoogleMapRedirect(sched.name, sched.address)} className="bg-white border text-[10px] px-2 py-1 rounded flex gap-1 font-bold"><Icons.Map />地圖</button>
+                          </div>
+                        )}
+                        {sched.notes && <p className="mt-2 text-xs italic text-[#7C6A48] bg-[#E9DCA3]/20 border-l-4 border-[#E9DCA3] pl-2.5 py-1">✍️ {sched.notes}</p>}
+                        {sched.ticketFileUrl && (
+                          <div className="mt-2.5 pt-2 border-t border-dashed border-[#EAE6D9]">
+                            <button onClick={() => handlePreviewAttachment(sched.ticketFileUrl, sched.name, false)} className="w-full text-xs font-bold text-[#8F9E8B] bg-[#F4F8F3] px-3 py-1.5 rounded-xl border border-[#8F9E8B]/30">🎟️ 點擊預覽門票憑證</button>
+                          </div>
+                        )}
+                        <div className="mt-3 flex justify-between items-center">
+                          <div className="flex gap-1">
+                            <button disabled={idx===0} onClick={() => moveSchedule(idx, 'up')} className="p-1 border rounded bg-slate-50 text-xs disabled:opacity-30">🔼</button>
+                            <button disabled={idx===arr.length-1} onClick={() => moveSchedule(idx, 'down')} className="p-1 border rounded bg-slate-50 text-xs disabled:opacity-30">🔽</button>
+                          </div>
+                          <div className="flex items-center gap-1 bg-[#F4F8F3] px-2.5 py-1 rounded-full text-[10px] text-[#5B6858] border border-[#8F9E8B]/20">
+                            預估 {sched.transportTime} min 🚇
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* --- Bookings Tab --- */}
+            {activeTab === 'bookings' && (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <h2 className="font-serif text-lg font-bold text-[#3E4A3B]">🎫 我的電子憑證</h2>
+                  <button onClick={() => openBookingAddEdit()} className={`bg-[#8F9E8B] text-white py-1 px-3 rounded-full text-xs font-bold flex items-center gap-1 border-2 border-[#6F7F6C] shadow-sm ${styles.activeBtn}`}><Icons.Plus /> 新增憑證</button>
+                </div>
+                <div className="flex gap-1 overflow-x-auto pb-1.5 scrollbar-none">
+                  {[{ id: 'flight', label: "✈️ 航班" }, { id: 'hotel', label: "🏨 住宿" }, { id: 'transit', label: "🚆 交通" }, { id: 'ticket', label: "🎫 門票" }].map(tab => (
+                    <button key={tab.id} onClick={() => setBookingFilter(tab.id)} className={`text-xs px-3 py-1.5 rounded-xl border-2 font-bold ${bookingFilter === tab.id ? 'bg-[#8F9E8B] text-white border-[#6F7F6C]' : 'bg-white text-[#6F695B]'}`}>{tab.label}</button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-1 gap-4">
+                  {bookings.filter(b => b.type === bookingFilter).map(book => (
+                    <div key={book.id} className="bg-white border-2 border-[#8F9E8B] rounded-2xl overflow-hidden shadow-sm">
+                      <div className="p-3 text-white font-bold flex justify-between bg-[#8F9E8B]">
+                        <span className="text-xs">{book.title || book.flightNo}</span>
+                        <div className="flex gap-1.5">
+                          <button onClick={() => openBookingAddEdit(book)} className="text-xs bg-black/15 px-2 py-0.5 rounded">編輯</button>
+                          <button onClick={() => requestDelete('bookings', book.id)} className="text-xs bg-red-800/20 px-2 py-0.5 rounded">刪除</button>
+                        </div>
+                      </div>
+                      <div className="p-4 space-y-2 text-xs text-[#6F695B]">
+                        <p>📅 日期: {book.date || book.checkInDate}</p>
+                        <p>⏰ 時間: {book.time || book.checkInTime}</p>
+                        {book.notes && <p className="italic bg-[#E9DCA3]/15 border-l-4 border-[#C88A58] pl-2 py-1">📝 {book.notes}</p>}
+                        {book.fileUrl && (
+                          <button onClick={() => handlePreviewAttachment(book.fileUrl, book.title, book.pinProtected)} className="w-full mt-2 font-bold px-3 py-1.5 rounded-xl border bg-[#F4F8F3] text-[#8F9E8B]">📄 點擊預覽檔案 {book.pinProtected && '🔐'}</button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* --- Expenses Tab --- */}
+            {activeTab === 'expenses' && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="font-serif text-lg font-bold text-[#3E4A3B]">💰 記帳簿</h2>
+                  <button onClick={() => openExpenseAddEdit()} className={`bg-[#8F9E8B] text-white py-1 px-3 rounded-full text-xs font-bold flex items-center gap-1 border-2 border-[#6F7F6C] shadow-sm ${styles.activeBtn}`}><Icons.Plus /> 記一筆</button>
+                </div>
+                <div className="bg-[#8F9E8B] text-white rounded-2xl p-4 shadow-sm border-2 border-[#6F7F6C]">
+                  <div className="flex justify-between text-[10px] pb-2 border-b border-[#AEC2AA]">
+                    <span>預算 & 雙人拆帳看板</span> <span>總花費(HKD)</span>
+                  </div>
+                  <div className="text-2xl font-bold font-mono text-right mt-2 text-[#FFE993]">${getCurrencyTotals().TotalHKD}</div>
+                  <div className="bg-[#FDFCF7] text-[#4A4435] rounded-xl p-3 mt-3 shadow-xs">
+                    <div className="text-xs font-bold border-l-4 border-[#C88A58] pl-2">{getCurrencyTotals().whoOwesWhom}</div>
+                  </div>
+                </div>
+                <div className="bg-white border-2 border-[#8F9E8B] rounded-2xl p-4">
+                  {expenses.map(exp => (
+                    <div key={exp.id} className="flex justify-between items-center text-xs py-2 border-b border-dashed">
+                      <div>
+                        <div className="font-bold text-[#3E4A3B]">{exp.desc}</div>
+                        <div className="text-[9px] text-gray-500">{exp.date} · {exp.payer} 付</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold font-mono text-[#C88A58]">{exp.currency} {exp.amount}</span>
+                        <button onClick={() => requestDelete('expenses', exp.id)} className="text-red-500"><Icons.Trash /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* --- Plannings Tab --- */}
+            {activeTab === 'plannings' && (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <h2 className="font-serif text-lg font-bold text-[#3E4A3B]">📝 備忘與清單</h2>
+                  <button onClick={() => openPlanningAddEdit()} className={`bg-[#8F9E8B] text-white py-1 px-3 rounded-full text-xs font-bold border-2 border-[#6F7F6C]`}><Icons.Plus /> 新增</button>
+                </div>
+                <div className="bg-[#FCFAF2] border-2 border-[#8F9E8B] rounded-2xl p-4">
+                   {plannings.map(plan => (
+                     <div key={plan.id} className="flex justify-between text-xs py-1.5">
+                       <label className="flex items-center gap-2 cursor-pointer">
+                         <input type="checkbox" checked={plan.done} onChange={() => saveData('planning', 'plannings', plan.id, { ...plan, done: !plan.done })} />
+                         <span className={plan.done ? 'line-through text-gray-400' : ''}>{plan.text}</span>
+                       </label>
+                       <button onClick={() => requestDelete('plannings', plan.id)} className="text-red-500"><Icons.Trash /></button>
+                     </div>
+                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* --- Culture Tab --- */}
+            {activeTab === 'culture' && (
+              <div className="space-y-4">
+                <div className="bg-white border-2 border-[#8F9E8B] rounded-2xl p-4">
+                   <h3 className="font-serif text-lg font-bold flex gap-1 mb-3"><Icons.Globe /> 文化禮儀</h3>
+                   <div className="flex gap-2 overflow-x-auto pb-2 mb-2 scrollbar-none">
+                     {Object.keys(countryGuides).map(code => (
+                       <button key={code} onClick={() => setActiveLanguageTab(code)} className={`text-xs px-3 py-1.5 rounded-full border ${activeLanguageTab === code ? 'bg-[#8F9E8B] text-white' : 'bg-gray-50'}`}>{countryGuides[code].name.split(' ')[0]}</button>
+                     ))}
+                   </div>
+                   <div className="bg-[#FCFAF2] p-4 rounded-xl text-xs space-y-2 leading-relaxed text-gray-700">
+                     <p>{countryGuides[activeLanguageTab].food}</p>
+                     <p>{countryGuides[activeLanguageTab].transit}</p>
+                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- Members Tab --- */}
+            {activeTab === 'members' && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="font-serif text-lg font-bold">👥 旅伴成員</h2>
+                  <button onClick={() => openMemberAddEdit()} className={`bg-[#8F9E8B] text-white py-1 px-3 rounded-full text-xs font-bold border-2 border-[#6F7F6C]`}><Icons.Plus /> 新增</button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {members.map(member => (
+                    <div key={member.id} className="bg-white border-2 border-[#8F9E8B] rounded-2xl p-4 text-center relative">
+                      <button onClick={() => requestDelete('members', member.id)} className="absolute top-2 right-2 text-[10px] text-red-500">❌</button>
+                      <img src={member.avatar} alt={member.name} className="w-16 h-16 rounded-full mx-auto bg-slate-50 border-2" />
+                      <h3 className="text-sm font-bold mt-2">{member.name}</h3>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </main>
+
+          {/* 模態彈窗 */}
+          {showScheduleModal && editingSchedule && (
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+              <div className="bg-white border-2 border-[#8F9E8B] rounded-2xl p-5 w-full max-w-sm">
+                <h3 className="font-bold mb-3">📝 編輯行程手帳</h3>
+                <input type="text" value={editingSchedule.name} onChange={e => setEditingSchedule({...editingSchedule, name: e.target.value})} className="w-full text-xs border rounded p-2 mb-2" placeholder="行程名稱" />
+                <input type="time" value={editingSchedule.time} onChange={e => setEditingSchedule({...editingSchedule, time: e.target.value})} className="w-full text-xs border rounded p-2 mb-2" />
+                <textarea rows="2" value={editingSchedule.notes} onChange={e => setEditingSchedule({...editingSchedule, notes: e.target.value})} className="w-full text-xs border rounded p-2 mb-2" placeholder="備註..." />
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => setShowScheduleModal(false)} className="flex-1 bg-gray-200 text-xs py-2 rounded-xl">取消</button>
+                  <button onClick={handleSaveSchedule} className="flex-1 bg-[#8F9E8B] text-white text-xs py-2 rounded-xl">儲存</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 密碼彈窗 */}
+          {showPinModal && (
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl p-5 w-full max-w-xs text-center">
+                <h3 className="font-bold mb-2">請輸入保險箱密碼</h3>
+                <input type="password" value={tempPin} onChange={e => setTempPin(e.target.value)} className="w-full text-center tracking-widest border rounded p-2 mb-3" placeholder="4位數" />
+                {pinError && <p className="text-xs text-red-500 mb-2">{pinError}</p>}
+                <div className="flex gap-2"><button onClick={() => setShowPinModal(false)} className="flex-1 bg-gray-200 py-2 rounded text-xs">取消</button><button onClick={handleVerifyPin} className="flex-1 bg-[#8F9E8B] text-white py-2 rounded text-xs">解鎖</button></div>
+              </div>
+            </div>
+          )}
+
+          {/* 刪除確認 */}
+          {deleteConfirm.show && (
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl p-5 w-full max-w-xs text-center">
+                <h3 className="font-bold mb-2">確定要刪除這筆資料嗎？</h3>
+                <div className="flex gap-2"><button onClick={() => setDeleteConfirm({show:false})} className="flex-1 bg-gray-200 py-2 rounded text-xs">取消</button><button onClick={confirmDelete} className="flex-1 bg-red-500 text-white py-2 rounded text-xs">刪除</button></div>
+              </div>
+            </div>
+          )}
+
+          {/* 系統提醒彈窗 */}
+          {systemAlertMessage && (
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl p-5 w-full max-w-xs text-center">
+                <span className="text-3xl">⚠️</span>
+                <h3 className="font-bold mb-2 mt-2">系統提醒</h3>
+                <p className="text-xs mb-4">{systemAlertMessage}</p>
+                <button onClick={() => setSystemAlertMessage(null)} className="bg-[#8F9E8B] text-white py-2 px-6 rounded-xl text-xs">我知道了</button>
+              </div>
+            </div>
+          )}
+
+          {/* 預覽檔案 */}
+          {previewFile.url && (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl p-4 w-full max-w-md max-h-[80vh] flex flex-col">
+                <div className="flex justify-between items-center mb-2"><h3 className="font-bold text-sm">預覽憑證</h3> <button onClick={() => setPreviewFile({url:null})} className="text-xl">✕</button></div>
+                <div className="flex-1 overflow-auto bg-gray-100 rounded flex items-center justify-center p-2">
+                  {previewFile.url.startsWith('data:image') ? <img src={previewFile.url} className="max-w-full rounded" /> : <a href={previewFile.url} download className="bg-[#8F9E8B] text-white px-4 py-2 rounded text-xs">下載 PDF 檔案</a>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 導航列 */}
+          <div className="h-10"></div>
+          <nav className="fixed bottom-0 left-0 right-0 w-full bg-[#FBF9F3] border-t-2 border-[#8F9E8B] z-40">
+            <div className="max-w-md mx-auto px-2 py-2 flex items-center justify-around overflow-x-auto scrollbar-none gap-1">
+              {[{ id: 'schedules', label: "行程", icon: Icons.Calendar }, { id: 'bookings', label: "預訂", icon: Icons.Ticket }, { id: 'expenses', label: "記帳", icon: Icons.Coins }, { id: 'plannings', label: "準備", icon: Icons.CheckList }, { id: 'culture', label: "文化", icon: Icons.Globe }, { id: 'members', label: "旅伴", icon: Icons.Users }].map(tab => {
+                const IsActive = activeTab === tab.id;
+                return (
+                  <button key={tab.id} onClick={() => { setActiveTab(tab.id); window.scrollTo({top:0}); }} className={`flex flex-col items-center p-2 rounded-xl ${IsActive ? 'bg-[#8F9E8B] text-white' : 'text-[#8C8471]'}`}>
+                    <tab.icon /><span className="text-[10px] font-bold mt-1">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+        </div>
+      );
+    }
+
+    // 啟動 React
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
